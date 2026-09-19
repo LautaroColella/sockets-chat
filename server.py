@@ -1,11 +1,33 @@
 import sqlite3
+import socket
+import sys
 
-DB = "chat.db"
+DB_NAME = "chat.db"
+HOST = "127.0.0.1"
+PORT = 1337
+
+
+def server():
+    try:
+        # https://docs.python.org/3/library/socket.html#socket.socket
+        # "socket.AF_INET" se usa para ipv4, "AF_INET6" se usa para ipv6.
+        # "socket.SOCK_STREAM" es el tipo de socket "STREAM" que equivale a una conexión TCP.
+        sv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # Se conecta el socket al host y puerto.
+        sv.bind((HOST, PORT))
+
+        sv.listen()
+        return sv
+
+    except Exception as err:
+        print(f"Error en el inicio del servidor: {err}")
+        return None
 
 
 def db():
     try:
-        with sqlite3.connect(DB) as conn:
+        # Se conecta a la DB y crea la tabla.
+        with sqlite3.connect(DB_NAME) as conn:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS chat (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -21,15 +43,18 @@ def db():
         return False
 
 
-def start():
+if __name__ == "__main__":
     db_on = db()
 
     if db_on == False:
         print("Error durante la conexión a la base de datos")
-        return
+        sys.exit()
+
+    sv = server()
+    if not sv:
+        print("Error durante la inicialización del servidor")
+        sys.exit()
+
+    print(f"Servidor escuchando en el puerto {PORT}")
 
     print("Exito")
-
-
-if __name__ == "__main__":
-    start()
