@@ -55,6 +55,24 @@ if __name__ == "__main__":
         print("Error durante la inicialización del servidor")
         sys.exit()
 
+    sv.settimeout(1)
+
     print(f"Servidor escuchando en el puerto {PORT}")
+    try:
+        while True:
+            try:
+                conn = sv.accept()
+                client_conn = conn[0]
+                client_data = conn[1]
+
+            except TimeoutError:
+                continue
+
+    except KeyboardInterrupt:
+        print("Servidor detenido manualmente")
+
+    finally:
+        sv.close()
+        print("Servidor detenido")
 
     print("Exito")
