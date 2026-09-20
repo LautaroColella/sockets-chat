@@ -1,7 +1,7 @@
 import sqlite3
 import socket
 import sys
-import datetime
+from datetime import datetime
 
 DB_NAME = "chat.db"
 HOST = "127.0.0.1"
@@ -56,7 +56,8 @@ def connections(sv):
 
                     response = f"Mensaje recibido: {ts}"
                     client_conn.sendall(response.encode("utf-8"))
-                    client_conn.close()
+
+                client_conn.close()
 
     except KeyboardInterrupt:
         print("Servidor detenido manualmente")
