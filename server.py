@@ -5,7 +5,7 @@ import datetime
 
 DB_NAME = "chat.db"
 HOST = "127.0.0.1"
-PORT = 1337
+PORT = 5000
 
 
 def server():
@@ -25,6 +25,47 @@ def server():
         return None
 
 
+def connections(sv):
+    try:
+        while True:
+            try:
+                conn = sv.accept()
+
+                # socket del cliente
+                client_conn = conn[0]
+                # ip y puerto del cliente
+                client_info = conn[1]
+
+            except socket.timeout:
+                pass
+
+            else:
+                # Este loop permite que el usuario envíe múltiple mensajes
+                while True:
+                    # El servidor recibe hasta 128 bytes de datos por mensaje
+                    data = client_conn.recv(128)
+
+                    if not data:
+                        break
+
+                    # Los sockets usan bytes, se transforma el mensaje a UTF-8 para la DB
+                    message = data.decode("utf-8")
+                    ts = datetime.now().isoformat()
+
+                    save(message, ts, client_info[0])
+
+                    response = f"Mensaje recibido: {ts}"
+                    client_conn.sendall(response.encode("utf-8"))
+                    client_conn.close()
+
+    except KeyboardInterrupt:
+        print("Servidor detenido manualmente")
+
+    finally:
+        sv.close()
+        sys.exit()
+
+
 def db():
     try:
         # Se conecta a la DB y crea la tabla.
@@ -40,7 +81,25 @@ def db():
         return True
 
     except sqlite3.Error as err:
-        print(f"Error en la base de datos: {err}")
+        print(f"Error en la conexión a la base de datos: {err}")
+        return False
+
+
+def save(message, date, ip):
+    try:
+        with sqlite3.connect(DB_NAME) as conn:
+            conn.execute(
+                """
+                INSERT INTO chat (contenido, fecha_envio, ip_cliente)
+                VALUES (?, ?, ?)
+                """,
+                (message, date, ip),
+            )
+
+        return True
+
+    except sqlite3.Error as err:
+        print(f"Error al guardar el mensaje en la base de datos: {err}")
         return False
 
 
@@ -59,33 +118,5 @@ if __name__ == "__main__":
     sv.settimeout(1)
 
     print(f"Servidor escuchando en el puerto {PORT}")
-    try:
-        while True:
-            try:
-                conn = sv.accept()
-                client_conn = conn[0]
-                client_info = conn[1]
 
-            except socket.timeout:
-                pass
-
-            else:
-                data = client_conn.recv(1024)
-
-                if data:
-                    message = data.decode("utf-8")  # send to db
-
-                    ts = datetime.now().isoformat()
-                    response = f"Mensaje recibido: {ts}"
-                    client_conn.sendall(response.encode("utf-8"))
-
-                client_conn.close()
-
-    except KeyboardInterrupt:
-        print("Servidor detenido manualmente")
-
-    finally:
-        sv.close()
-        sys.exit()
-
-    print("Exito")
+    connections(sv)
