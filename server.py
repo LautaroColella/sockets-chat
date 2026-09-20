@@ -1,6 +1,7 @@
 import sqlite3
 import socket
 import sys
+import datetime
 
 DB_NAME = "chat.db"
 HOST = "127.0.0.1"
@@ -63,16 +64,28 @@ if __name__ == "__main__":
             try:
                 conn = sv.accept()
                 client_conn = conn[0]
-                client_data = conn[1]
+                client_info = conn[1]
 
-            except TimeoutError:
-                continue
+            except socket.timeout:
+                pass
+
+            else:
+                data = client_conn.recv(1024)
+
+                if data:
+                    message = data.decode("utf-8")  # send to db
+
+                    ts = datetime.now().isoformat()
+                    response = f"Mensaje recibido: {ts}"
+                    client_conn.sendall(response.encode("utf-8"))
+
+                client_conn.close()
 
     except KeyboardInterrupt:
         print("Servidor detenido manualmente")
 
     finally:
         sv.close()
-        print("Servidor detenido")
+        sys.exit()
 
     print("Exito")
